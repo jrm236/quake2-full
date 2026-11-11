@@ -709,10 +709,12 @@ GRENADE LAUNCHER
 void weapon_grenadelauncher_fire (edict_t *ent)
 {
 	vec3_t	offset;
-	vec3_t	forward, right;
+	vec3_t	forward, right, up;
 	vec3_t	start;
 	int		damage = 120;
 	float	radius;
+	int		projectile;
+	int		speed;
 
 	radius = damage+40;
 	if (is_quad)
@@ -725,7 +727,28 @@ void weapon_grenadelauncher_fire (edict_t *ent)
 	VectorScale (forward, -2, ent->client->kick_origin);
 	ent->client->kick_angles[0] = -1;
 
-	fire_grenade (ent, start, forward, damage, 600, 2.5, radius);
+	projectile = rand() % 3;
+	speed = level.time + 100;
+		
+	if (projectile == 0) {
+		fire_rocket(ent, start, forward, damage, 800 / (20 * random()), radius, 120);
+
+		start[0] += right[0] * 10;
+		start[1] += right[1] * 10;
+		start[2] += right[2] * 10;
+		fire_rocket(ent, start, forward, damage, 800 / (20 * random()), radius, 120);
+
+		start[0] -= right[0] * 20;
+		start[1] -= right[1] * 20;
+		start[2] -= right[2] * 20;
+		fire_rocket(ent, start, forward, damage, 800 / (20 * random()), radius, 120);
+	}
+	else if (projectile == 1) {
+		fire_blaster(ent, start, forward, damage, speed, 100, false);
+	}
+	else {
+		fire_grenade(ent, start, forward, damage, 600, 2.5, radius);
+	}
 
 	gi.WriteByte (svc_muzzleflash);
 	gi.WriteShort (ent-g_edicts);
