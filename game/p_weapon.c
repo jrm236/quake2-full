@@ -730,7 +730,8 @@ void weapon_grenadelauncher_fire (edict_t *ent)
 	projectile = rand() % 3;
 	speed = level.time + 100;
 		
-	if (projectile == 0) {
+	if (projectile == 0) 
+	{
 		fire_rocket(ent, start, forward, damage, 800 / (20 * random()), radius, 120);
 
 		start[0] += right[0] * 10;
@@ -743,10 +744,23 @@ void weapon_grenadelauncher_fire (edict_t *ent)
 		start[2] -= right[2] * 20;
 		fire_rocket(ent, start, forward, damage, 800 / (20 * random()), radius, 120);
 	}
-	else if (projectile == 1) {
-		fire_blaster(ent, start, forward, damage, speed, 100, false);
+	else if (projectile == 1) 
+	{
+		fire_explosive_blaster(ent, start, forward, damage, speed + 50, 100, false);
+
+		start[0] += right[0] * 10;
+		start[1] += right[1] * 10;
+		start[2] += right[2] * 10;
+		fire_explosive_blaster(ent, start, forward, damage, speed + 50, 100, false);
+
+		start[0] -= right[0] * 20;
+		start[1] -= right[1] * 20;
+		start[2] -= right[2] * 20;
+		fire_explosive_blaster(ent, start, forward, damage, speed + 50, 100, false);
+
 	}
-	else {
+	else 
+	{
 		fire_grenade(ent, start, forward, damage, 600, 2.5, radius);
 	}
 
@@ -766,7 +780,7 @@ void weapon_grenadelauncher_fire (edict_t *ent)
 void Weapon_GrenadeLauncher (edict_t *ent)
 {
 	static int	pause_frames[]	= {34, 51, 59, 0};
-	static int	fire_frames[]	= {6, 0};
+	static int	fire_frames[]	= {6, 8, 10, 0};
 
 	Weapon_Generic (ent, 5, 16, 59, 64, pause_frames, fire_frames, weapon_grenadelauncher_fire);
 }

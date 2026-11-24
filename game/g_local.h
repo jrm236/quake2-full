@@ -734,6 +734,9 @@ void fire_rocket (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed
 void fire_rail (edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick);
 void fire_bfg (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, float damage_radius);
 
+// Added from my mod
+void fire_explosive_blaster (edict_t* self, vec3_t start, vec3_t aimdir, int damage, int speed, int effect, qboolean hyper);
+
 //
 // g_ptrail.c
 //

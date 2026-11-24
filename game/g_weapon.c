@@ -389,6 +389,76 @@ void fire_blaster (edict_t *self, vec3_t start, vec3_t dir, int damage, int spee
 	}
 }	
 
+void explosive_blaster_touch(edict_t* self, edict_t* other, cplane_t* plane, csurface_t* surf)
+{
+	if (other == self->owner)
+		return;
+
+	if (surf && (surf->flags & SURF_SKY))
+	{
+		G_FreeEdict(self);
+		return;
+	}
+
+	if (other->takedamage)
+	{
+		T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, self->dmg, 1, DAMAGE_ENERGY, MOD_BLASTER);
+	}
+
+	T_RadiusDamage(self, self->owner, self->radius_dmg, other, self->dmg_radius, MOD_R_SPLASH);
+
+	gi.WriteByte(svc_temp_entity);
+	gi.WriteByte(TE_BFG_EXPLOSION);
+	gi.WritePosition(self->s.origin);
+	gi.multicast(self->s.origin, MULTICAST_PVS);
+
+	G_FreeEdict(self);
+}
+
+void fire_explosive_blaster(edict_t* self, vec3_t start, vec3_t dir, int damage, int speed, int effect, qboolean hyper)
+{
+	edict_t* bolt;
+	trace_t	tr;
+
+	VectorNormalize(dir);
+
+	bolt = G_Spawn();
+	bolt->svflags = SVF_DEADMONSTER;
+	VectorCopy(start, bolt->s.origin);
+	VectorCopy(start, bolt->s.old_origin);
+	vectoangles(dir, bolt->s.angles);
+	VectorScale(dir, speed, bolt->velocity);
+	bolt->movetype = MOVETYPE_FLYMISSILE;
+	bolt->clipmask = MASK_SHOT;
+	bolt->solid = SOLID_BBOX;
+	bolt->s.effects |= effect;
+	VectorClear(bolt->mins);
+	VectorClear(bolt->maxs);
+	bolt->s.modelindex = gi.modelindex("sprites/s_bfg1.sp2");
+	bolt->s.sound = gi.soundindex("misc/lasfly.wav");
+	bolt->owner = self;
+	bolt->touch = explosive_blaster_touch;
+	bolt->nextthink = level.time + 2;
+	bolt->think = G_FreeEdict;
+	bolt->dmg = damage;
+	bolt->radius_dmg = damage;
+	bolt->dmg_radius = 200;
+	bolt->classname = "bolt";
+	if (hyper)
+		bolt->spawnflags = 1;
+	gi.linkentity(bolt);
+
+	if (self->client)
+		check_dodge(self, bolt->s.origin, dir, speed);
+
+	tr = gi.trace(self->s.origin, NULL, NULL, bolt->s.origin, bolt, MASK_SHOT);
+	if (tr.fraction < 1.0)
+	{
+		VectorMA(bolt->s.origin, -10, dir, bolt->s.origin);
+		bolt->touch(bolt, tr.ent, NULL, NULL);
+	}
+}
+
 
 /*
 =================
@@ -634,7 +704,8 @@ void fire_rocket (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed
 	VectorClear (rocket->maxs);
 	rocket->s.modelindex = gi.modelindex ("models/objects/rocket/tris.md2");
 	rocket->owner = self;
-	rocket->touch = rocket_touch;
+	rocket->touch = blaster_touch;
+	//rocket->touch = rocket_touch;
 	rocket->nextthink = level.time + 8000/speed;
 	rocket->think = G_FreeEdict;
 	rocket->dmg = damage;
