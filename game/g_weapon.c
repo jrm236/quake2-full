@@ -389,77 +389,6 @@ void fire_blaster (edict_t *self, vec3_t start, vec3_t dir, int damage, int spee
 	}
 }	
 
-void explosive_blaster_touch(edict_t* self, edict_t* other, cplane_t* plane, csurface_t* surf)
-{
-	if (other == self->owner)
-		return;
-
-	if (surf && (surf->flags & SURF_SKY))
-	{
-		G_FreeEdict(self);
-		return;
-	}
-
-	if (other->takedamage)
-	{
-		T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, self->dmg, 1, DAMAGE_ENERGY, MOD_BLASTER);
-	}
-
-	T_RadiusDamage(self, self->owner, self->radius_dmg, other, self->dmg_radius, MOD_R_SPLASH);
-
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_BFG_EXPLOSION);
-	gi.WritePosition(self->s.origin);
-	gi.multicast(self->s.origin, MULTICAST_PVS);
-
-	G_FreeEdict(self);
-}
-
-void fire_explosive_blaster(edict_t* self, vec3_t start, vec3_t dir, int damage, int speed, int effect, qboolean hyper)
-{
-	edict_t* bolt;
-	trace_t	tr;
-
-	VectorNormalize(dir);
-
-	bolt = G_Spawn();
-	bolt->svflags = SVF_DEADMONSTER;
-	VectorCopy(start, bolt->s.origin);
-	VectorCopy(start, bolt->s.old_origin);
-	vectoangles(dir, bolt->s.angles);
-	VectorScale(dir, speed, bolt->velocity);
-	bolt->movetype = MOVETYPE_FLYMISSILE;
-	bolt->clipmask = MASK_SHOT;
-	bolt->solid = SOLID_BBOX;
-	bolt->s.effects |= effect;
-	VectorClear(bolt->mins);
-	VectorClear(bolt->maxs);
-	bolt->s.modelindex = gi.modelindex("sprites/s_bfg1.sp2");
-	bolt->s.sound = gi.soundindex("misc/lasfly.wav");
-	bolt->owner = self;
-	bolt->touch = explosive_blaster_touch;
-	bolt->nextthink = level.time + 2;
-	bolt->think = G_FreeEdict;
-	bolt->dmg = damage;
-	bolt->radius_dmg = damage;
-	bolt->dmg_radius = 200;
-	bolt->classname = "bolt";
-	if (hyper)
-		bolt->spawnflags = 1;
-	gi.linkentity(bolt);
-
-	if (self->client)
-		check_dodge(self, bolt->s.origin, dir, speed);
-
-	tr = gi.trace(self->s.origin, NULL, NULL, bolt->s.origin, bolt, MASK_SHOT);
-	if (tr.fraction < 1.0)
-	{
-		VectorMA(bolt->s.origin, -10, dir, bolt->s.origin);
-		bolt->touch(bolt, tr.ent, NULL, NULL);
-	}
-}
-
-
 /*
 =================
 fire_grenade
@@ -704,8 +633,7 @@ void fire_rocket (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed
 	VectorClear (rocket->maxs);
 	rocket->s.modelindex = gi.modelindex ("models/objects/rocket/tris.md2");
 	rocket->owner = self;
-	rocket->touch = blaster_touch;
-	//rocket->touch = rocket_touch;
+	rocket->touch = rocket_touch;
 	rocket->nextthink = level.time + 8000/speed;
 	rocket->think = G_FreeEdict;
 	rocket->dmg = damage;
@@ -984,4 +912,301 @@ void fire_bfg (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, f
 		check_dodge (self, bfg->s.origin, dir, speed);
 
 	gi.linkentity (bfg);
+}
+
+/*
+=================
+Added for my mod
+=================
+*/
+
+/*
+=================
+fire_explosive_blaster
+=================
+*/
+
+void explosive_blaster_touch(edict_t* self, edict_t* other, cplane_t* plane, csurface_t* surf)
+{
+	if (other == self->owner)
+		return;
+
+	if (surf && (surf->flags & SURF_SKY))
+	{
+		G_FreeEdict(self);
+		return;
+	}
+
+	if (other->takedamage)
+	{
+		T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, self->dmg, 1, DAMAGE_ENERGY, MOD_BLASTER);
+	}
+
+	T_RadiusDamage(self, self->owner, self->radius_dmg, other, self->dmg_radius, MOD_G_SPLASH);
+
+	gi.WriteByte(svc_temp_entity);
+	gi.WriteByte(TE_ROCKET_EXPLOSION);
+	gi.WritePosition(self->s.origin);
+	gi.multicast(self->s.origin, MULTICAST_PVS);
+
+	G_FreeEdict(self);
+}
+
+void fire_explosive_blaster(edict_t* self, vec3_t start, vec3_t dir, int damage, int speed, int effect, qboolean hyper)
+{
+	edict_t* bolt;
+	trace_t	tr;
+
+	VectorNormalize(dir);
+
+	bolt = G_Spawn();
+	bolt->svflags = SVF_DEADMONSTER;
+	VectorCopy(start, bolt->s.origin);
+	VectorCopy(start, bolt->s.old_origin);
+	vectoangles(dir, bolt->s.angles);
+	VectorScale(dir, speed, bolt->velocity);
+	bolt->movetype = MOVETYPE_FLYMISSILE;
+	bolt->clipmask = MASK_SHOT;
+	bolt->solid = SOLID_BBOX;
+	bolt->s.effects |= EF_BFG | EF_ANIM_ALLFAST;
+	VectorClear(bolt->mins);
+	VectorClear(bolt->maxs);
+	bolt->s.modelindex = gi.modelindex("sprites/s_bfg1.sp2");
+	bolt->s.sound = gi.soundindex("misc/lasfly.wav");
+	bolt->owner = self;
+	bolt->touch = explosive_blaster_touch;
+	bolt->nextthink = level.time + 2;
+	bolt->think = G_FreeEdict;
+	bolt->dmg = damage;
+	bolt->radius_dmg = 50;
+	bolt->dmg_radius = 120;
+	bolt->classname = "bolt";
+	if (hyper)
+		bolt->spawnflags = 1;
+	gi.linkentity(bolt);
+
+	if (self->client)
+		check_dodge(self, bolt->s.origin, dir, speed);
+
+	tr = gi.trace(self->s.origin, NULL, NULL, bolt->s.origin, bolt, MASK_SHOT);
+	if (tr.fraction < 1.0)
+	{
+		VectorMA(bolt->s.origin, -10, dir, bolt->s.origin);
+		bolt->touch(bolt, tr.ent, NULL, NULL);
+	}
+}
+
+/*
+=================
+fire_eye_of_winter
+=================
+*/
+
+void eye_of_winter_touch(edict_t* self, edict_t* other, cplane_t* plane, csurface_t* surf)
+{
+	if (other == self->owner)
+	{
+		return;
+	}
+
+	if (surf && (surf->flags & SURF_SKY))
+	{
+		G_FreeEdict(self);
+		return;
+	}
+
+	if (other->takedamage)
+	{
+		T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, self->dmg, 0, DAMAGE_ENERGY, MOD_BLASTER);
+	}
+
+	gi.WriteByte(svc_temp_entity);
+	gi.WriteByte(TE_BLASTER);
+	gi.WritePosition(self->s.origin);
+	if (plane)
+		gi.WriteDir(plane->normal);
+	else
+		gi.WriteDir(vec3_origin);
+	gi.multicast(self->s.origin, MULTICAST_PVS);
+
+	G_FreeEdict(self);
+}
+
+void eye_of_winter_think(edict_t* self)
+{
+	vec3_t angles;
+	vec3_t shard_direction;
+
+	if (level.time >= self->timestamp)
+	{
+		G_FreeEdict(self);
+		return;
+	}
+
+	VectorClear(angles);
+	angles[YAW] = self->angle;
+	AngleVectors(angles, shard_direction, NULL, NULL);
+
+	fire_blaster(self->owner, self->s.origin, shard_direction, 10, 400, EF_BLASTER, false);
+
+	self->angle += 45;
+
+	if (self->angle >= 360)
+	{
+		self->angle -= 360;
+	}
+
+	self->nextthink = level.time + 0.1f;
+}
+
+void fire_eye_of_winter(edict_t* self, vec3_t start, vec3_t dir, int damage, int speed)
+{
+	edict_t* projectile;
+	projectile = G_Spawn();
+
+	VectorCopy(start, projectile->s.origin);
+	VectorCopy(dir, projectile->movedir);
+	vectoangles(dir, projectile->s.angles);
+	VectorScale(dir, speed, projectile->velocity);
+	projectile->movetype = MOVETYPE_FLYMISSILE;
+	projectile->clipmask = MASK_SHOT;
+	projectile->solid = SOLID_BBOX;
+	//projectile->s.effects |= EF_BFG | EF_ANIM_ALLFAST;
+	VectorClear(projectile->mins);
+	VectorClear(projectile->maxs);
+	projectile->s.modelindex = gi.modelindex("sprites/s_bfg1.sp2");
+	projectile->owner = self;
+	projectile->touch = eye_of_winter_touch;
+	projectile->timestamp = level.time + 3.0f;
+	projectile->angle = 0;
+	projectile->nextthink = level.time + 0.1f;
+	projectile->think = eye_of_winter_think;
+	projectile->dmg = damage;
+	projectile->classname = "eye of winter";
+
+	gi.linkentity(projectile);
+
+}
+
+/*
+=================
+fire_ice_spear
+=================
+*/
+
+void ice_spear_pierce(edict_t* self)
+{
+	self->solid = SOLID_BBOX;
+
+	VectorScale(self->movedir, 1000, self->velocity);
+	gi.linkentity(self);
+
+	self->think = G_FreeEdict;
+	self->nextthink = level.time + 4.0f;
+}
+
+void ice_spear_touch(edict_t* self, edict_t* other, cplane_t* plane, csurface_t* surf)
+{
+	if (other == self->owner)
+	{
+		return;
+	}
+
+	if (surf && (surf->flags & SURF_SKY))
+	{
+		G_FreeEdict(self);
+		return;
+	}
+
+	if (other->takedamage)
+	{
+		T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, self->dmg, 0, DAMAGE_ENERGY, MOD_BLASTER);
+
+		if (self->count == 1)
+		{
+			self->solid = SOLID_NOT;
+			VectorScale(self->movedir, 1000, self->velocity);
+			self->think = ice_spear_pierce;
+			self->nextthink = level.time + FRAMETIME;
+			gi.linkentity(self);
+			return;
+		}
+	}
+
+	G_FreeEdict(self);
+}
+
+void ice_spear_boosted(edict_t* self)
+{
+	self->count = 1;
+	VectorScale(self->movedir, 1000, self->velocity);
+
+	self->think = G_FreeEdict;
+	self->nextthink = level.time + 4.0f;
+}
+
+void fire_ice_spear(edict_t* self, vec3_t start, vec3_t dir, int damage)
+{
+	edict_t* projectile;
+	VectorNormalize(dir);
+	projectile = G_Spawn();
+	projectile->svflags = SVF_DEADMONSTER;
+	VectorCopy(start, projectile->s.origin);
+	VectorCopy(dir, projectile->movedir);
+	vectoangles(dir, projectile->s.angles);
+	VectorScale(dir, 50, projectile->velocity);
+	projectile->movetype = MOVETYPE_FLYMISSILE;
+	projectile->clipmask = MASK_SHOT;
+	projectile->solid = SOLID_BBOX;
+	VectorClear(projectile->mins);
+	VectorClear(projectile->maxs);
+	projectile->s.modelindex = gi.modelindex("models/objects/laser/tris.md2");
+	projectile->s.effects |= EF_BLASTER;
+	projectile->owner = self;
+	projectile->touch = ice_spear_touch;
+	projectile->dmg = damage;
+	projectile->count = 0;
+	projectile->nextthink = level.time + 0.8f;
+	projectile->think = ice_spear_boosted;
+	projectile->classname = "ice spear";
+
+	gi.linkentity(projectile);
+
+}
+
+/*
+=================
+fire_scorching_ray
+=================
+*/
+void fire_scorching_ray(edict_t* self, vec3_t start, vec3_t dir, int damage)
+{
+	vec3_t		end;
+	trace_t		tr;
+
+	VectorMA(start, 8192, dir, end);
+	tr = gi.trace(start, NULL, NULL, end, self, MASK_SHOT);
+
+	if (tr.ent && tr.ent->takedamage)
+	{
+		T_Damage(tr.ent, self, self, dir, tr.endpos, tr.plane.normal, damage, 0, DAMAGE_ENERGY, MOD_BLASTER);
+	}
+
+	gi.WriteByte(svc_temp_entity);
+	gi.WriteByte(TE_BFG_LASER);
+	gi.WritePosition(start);
+	gi.WritePosition(tr.endpos);
+	gi.multicast(self->s.origin, MULTICAST_PHS);
+
+	//gi.WriteByte(svc_temp_entity);
+	//gi.WriteByte(TE_RAILTRAIL);
+	//gi.WritePosition(start);
+	//gi.WritePosition(tr.endpos);
+	//gi.multicast(self->s.origin, MULTICAST_PHS);
+
+	gi.WriteByte(svc_temp_entity);
+	gi.WriteByte(TE_BFG_EXPLOSION);
+	gi.WritePosition(tr.endpos);
+	gi.multicast(self->s.origin, MULTICAST_PHS);
+
 }

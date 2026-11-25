@@ -736,6 +736,9 @@ void fire_bfg (edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, f
 
 // Added from my mod
 void fire_explosive_blaster (edict_t* self, vec3_t start, vec3_t aimdir, int damage, int speed, int effect, qboolean hyper);
+void fire_eye_of_winter (edict_t* self, vec3_t start, vec3_t dir, int damage, int speed);
+void fire_ice_spear(edict_t* self, vec3_t start, vec3_t dir, int damage);
+void fire_scorching_ray(edict_t* self, vec3_t start, vec3_t dir, int damage);
 
 //
 // g_ptrail.c
